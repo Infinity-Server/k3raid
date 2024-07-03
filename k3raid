@@ -1,0 +1,94 @@
+#!/bin/bash
+
+ROOT_NAME="k3root"
+ROOT_PATH="/tmp/k3raid"
+BASE_PATH="/boot/k3raid"
+DATA_PATH="/mnt/disk1/system/k3s"
+UNRAID_PATH="/usr/local/emhttp/plugins/k3raid/event"
+K3S_FILE_HOME="/home/k3s"
+K3S_FILE_NAME=(k3s kof k3init k3kill)
+K3S_DATA_PATH=(/etc/rancher /var/lib/rancher/k3s /var/lib/kubelet /var/lib/cni /var/log)
+
+prepare_rootfs_image() {
+  mkdir -p $ROOT_PATH
+  [ -f $BASE_PATH/$ROOT_NAME ] || (
+    dd if=/dev/zero of=$BASE_PATH/$ROOT_NAME bs=1M count=10
+    mkfs.ext4 $BASE_PATH/$ROOT_NAME
+    mkdir -p $ROOT_PATH
+    mount $BASE_PATH/$ROOT_NAME $ROOT_PATH
+    for item in $(\ls /);
+    do
+      [ -f /$item ] || mkdir -p $ROOT_PATH/$item
+    done
+    umount $ROOT_PATH
+  )
+}
+
+prepare_rootfs_mount() {
+  mount --make-shared /mnt
+  mkdir -p $ROOT_PATH
+  mount $BASE_PATH/$ROOT_NAME $ROOT_PATH
+  for item in $(\ls /);
+  do
+    if [ ! -f /$item ] && [ "$item" != "tmp" ];
+    then
+      if [ "$item" != "mnt" ];
+      then
+        mount -o bind /$item $ROOT_PATH/$item
+      else
+        mount --rbind /$item $ROOT_PATH/$item
+      fi
+    fi
+  done
+  mount -o bind /tmp $ROOT_PATH/tmp
+}
+
+prepare_unraid_event() {
+  mkdir -p $UNRAID_PATH
+  echo "#!/bin/bash" > $UNRAID_PATH/any_event
+  echo "exec bash $BASE_PATH/k3raid \$@" >> $UNRAID_PATH/any_event
+  chmod 755 $UNRAID_PATH/any_event
+}
+
+start_k3s() {
+  # k3s data paths
+  mkdir -p $DATA_PATH
+  for kdp in "${K3S_DATA_PATH[@]}";
+  do
+    mkdir -p ${DATA_PATH}${kdp}
+    mkdir -p ${ROOT_PATH}${kdp}
+    mount -o bind ${DATA_PATH}${kdp} ${ROOT_PATH}${kdp} 2>/dev/null
+  done
+  # copy binarys
+  mkdir -p ${ROOT_PATH}${K3S_FILE_HOME}
+  for file in "${K3S_FILE_NAME[@]}";
+  do
+    cp -rf $BASE_PATH/$file ${ROOT_PATH}${K3S_FILE_HOME}/${file}
+    chmod 755 ${ROOT_PATH}${K3S_FILE_HOME}/${file}
+  done
+  # run
+  unshare --mount --fork chroot $ROOT_PATH /home/k3s/k3init
+  # cleanup after k3s exit
+  for kdp in "${K3S_DATA_PATH[@]}";
+  do
+    umount ${ROOT_PATH}${kdp} 2>/dev/null
+  done
+}
+
+stopping_docker() {
+  pkill k3s
+}
+
+docker_started() {
+  perl $BASE_PATH/k3back
+}
+
+init() {
+  prepare_rootfs_image
+  prepare_rootfs_mount
+  prepare_unraid_event
+}
+
+command -v $1 >/dev/null 2>&1
+ok=$?
+[ "$ok" -ne 0 ] || $1

@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use POSIX qw(setsid);
+
+sub daemon {
+    my $pid = fork();
+    die "Fork failed: $!" unless defined $pid;
+
+    exit 0 if $pid;
+
+    setsid() or die "Can't start a new session: $!";
+
+    $pid = fork();
+    die "Second fork failed: $!" unless defined $pid;
+
+    exit 0 if $pid;
+
+    chdir '/' or die "Can't change directory to /: $!";
+
+    umask 0;
+
+    close STDIN;
+    close STDOUT;
+    close STDERR;
+
+    open(STDIN,  '<', '/dev/null');
+    open(STDOUT, '>', '/dev/null');
+    open(STDERR, '>', '/dev/null');
+}
+
+daemon();
+system('/usr/local/emhttp/plugins/k3raid/event/any_event start_k3s');

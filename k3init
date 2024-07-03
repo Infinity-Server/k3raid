@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# mount cgroup2
+mount -t cgroup2 cgroup2 /sys/fs/cgroup 2>/dev/null
+
+# rpcbind for nfs
+rpcbind
+
+# run k3s
+K3S=/home/k3s/k3s bash /home/k3s/kof
+
+# kill rpcbind
+pkill -9 rpcbind
+
+# killall
+/home/k3s/k3kill 2>/dev/null

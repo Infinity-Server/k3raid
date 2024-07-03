@@ -1,0 +1,3 @@
+#!/bin/bash
+
+$K3S server
