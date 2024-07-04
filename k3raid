@@ -25,9 +25,9 @@ prepare_rootfs_image() {
 }
 
 prepare_rootfs_mount() {
-  mount --make-shared /mnt
   mkdir -p $ROOT_PATH
-  mount $BASE_PATH/$ROOT_NAME $ROOT_PATH
+  mount -o ro $BASE_PATH/$ROOT_NAME $ROOT_PATH
+  mount --make-shared /mnt
   for item in $(\ls /);
   do
     if [ ! -f /$item ] && [ "$item" != "tmp" ];
