@@ -7,7 +7,17 @@
 
 2. Download k3s binary to `/boot/k3raid/k3s`
 
-3. Edit `/boot/k3raid/kof` which contains your k3s startup commands
+3. Edit `/boot/k3raid/kof` which contains your k3s startup commands like this:
+
+```bash
+#!/bin/bash
+$K3S \
+  server \
+  --disable=traefik \
+  --flannel-ipv6-masq \
+  --cluster-cidr='10.42.0.0/16,fdbd:cafe:42:0::/56' \
+  --service-cidr='10.43.0.0/16,fdbd:cafe:43:0::/112'
+```
 
 4. Last step, edit your `/boot/config/go` file, add a line of code: `bash /boot/k3raid/k3raid init`
 
