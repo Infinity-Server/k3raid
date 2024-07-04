@@ -4,10 +4,13 @@ ROOT_NAME="k3root"
 ROOT_PATH="/tmp/k3raid"
 BASE_PATH="/boot/k3raid"
 DATA_PATH="/mnt/disk1/system/k3s"
-UNRAID_PATH="/usr/local/emhttp/plugins/k3raid/event"
+
 K3S_FILE_HOME="/home/k3s"
 K3S_FILE_NAME=(k3s kof k3init k3kill)
 K3S_DATA_PATH=(/etc/rancher /var/lib/rancher/k3s /var/lib/kubelet /var/lib/cni /var/log)
+
+UNRAID_RC="/etc/rc.d"
+UNRAID_PATH="/usr/local/emhttp/plugins/k3raid/event"
 
 prepare_rootfs_image() {
   mkdir -p $ROOT_PATH
@@ -50,6 +53,12 @@ prepare_unraid_event() {
   chmod 755 $UNRAID_PATH/any_event
 }
 
+prepare_unraid_service() {
+  echo "#!/bin/bash" > $UNRAID_RC/rc.k3s
+  echo "exec bash $BASE_PATH/k3raid rc_\$@" >> $UNRAID_RC/rc.k3s
+  chmod 755 /etc/rc.d/rc.k3s
+}
+
 start_k3s() {
   # k3s data paths
   mkdir -p $DATA_PATH
@@ -83,10 +92,45 @@ disks_mounted() {
   perl $BASE_PATH/k3back
 }
 
+k3s_ppid() {
+  pid="$(ps aux | grep "$K3S_FILE_HOME/k3[s]" | awk '{print $2}' | xargs)"
+  ps -o ppid= -p $pid | xargs
+}
+
+k3s_alive() {
+  ppid="$(k3s_ppid)"
+  cat /proc/$ppid/cmdline | grep --binary-files=text kof | wc -l
+}
+
+rc_status() {
+  [ "$(k3s_alive)" == "1" ] && echo "* running ..." || echo "* stopped ..."
+}
+
+rc_start() {
+  echo "* starting ..."
+  [ "$(k3s_alive)" == "1" ] || disks_mounted
+}
+
+rc_stop() {
+  echo "* stopping ..."
+  [ "$(k3s_alive)" == "1" ] && unmounting_disks
+}
+
+rc_restart() {
+  rc_stop
+  sleep 5
+  rc_start
+}
+
+rc_() {
+  echo "Usage: rc.k3s status|start|stop|restart"
+}
+
 init() {
   prepare_rootfs_image
   prepare_rootfs_mount
   prepare_unraid_event
+  prepare_unraid_service
 }
 
 command -v $1 >/dev/null 2>&1
