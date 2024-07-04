@@ -1,3 +1,8 @@
 #!/bin/bash
 
-$K3S server
+$K3S \
+  server \
+  --disable=traefik \
+  --flannel-ipv6-masq \
+  --cluster-cidr='10.42.0.0/16,fdbd:cafe:42:0::/56' \
+  --service-cidr='10.43.0.0/16,fdbd:cafe:43:0::/112'

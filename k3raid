@@ -67,7 +67,7 @@ start_k3s() {
     chmod 755 ${ROOT_PATH}${K3S_FILE_HOME}/${file}
   done
   # run
-  unshare --mount --fork chroot $ROOT_PATH /home/k3s/k3init
+  chroot $ROOT_PATH /home/k3s/k3init
   # cleanup after k3s exit
   for kdp in "${K3S_DATA_PATH[@]}";
   do
@@ -75,11 +75,11 @@ start_k3s() {
   done
 }
 
-stopping_docker() {
+unmounting_disks() {
   pkill k3s
 }
 
-docker_started() {
+disks_mounted() {
   perl $BASE_PATH/k3back
 }
 

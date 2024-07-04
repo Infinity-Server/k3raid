@@ -14,8 +14,8 @@
 
 > Usage Notice
 
-1. Ensure docker engine enabled, cause we reuse unraid's docker lifetime event in this version
+1. After start, you can find k3s in `/home/k3s`, *DO NOT REMOVE THESE FILES !!!*
 
-2. After start, you can find k3s in `/home/k3s`, *DO NOT REMOVE THESE FILES !!!*
+2. All data are located in `/mnt/disk1/system/k3s`, you can change it by edit `k3raid` file
 
-3. All data are located in `/mnt/disk1/system/k3s`, you can change it by edit `k3raid` file
+3. Traefik use port `80/443` by default, which may conflict with emhttpd, use with caution
