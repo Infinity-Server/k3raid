@@ -76,7 +76,7 @@ start_k3s() {
     chmod 755 ${ROOT_PATH}${K3S_FILE_HOME}/${file}
   done
   # run
-  chroot $ROOT_PATH /home/k3s/k3init
+  chroot $ROOT_PATH $K3S_FILE_HOME/k3init
   # cleanup after k3s exit
   for kdp in "${K3S_DATA_PATH[@]}";
   do
@@ -127,6 +127,11 @@ rc_() {
   echo "Usage: rc.k3s status|start|stop|restart"
 }
 
+k3s_inside_jail() {
+  shift
+  chroot $ROOT_PATH $K3S_FILE_HOME/k3s "$@"
+}
+
 init() {
   prepare_rootfs_image
   prepare_rootfs_mount
@@ -136,4 +141,4 @@ init() {
 
 command -v $1 >/dev/null 2>&1
 ok=$?
-[ "$ok" -ne 0 ] || $1
+[ "$ok" -ne 0 ] || $1 "$@"
