@@ -94,6 +94,7 @@ disks_mounted() {
 
 k3s_ppid() {
   pid="$(ps aux | grep "$K3S_FILE_HOME/k3[s]" | awk '{print $2}' | xargs)"
+  [ "$pid" == "" ] && return
   ps -o ppid= -p $pid | xargs
 }
 
