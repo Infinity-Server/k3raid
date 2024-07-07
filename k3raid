@@ -33,7 +33,7 @@ prepare_rootfs_mount() {
   mount --make-shared /mnt
   for item in $(\ls /);
   do
-    if [ ! -f /$item ] && [ "$item" != "tmp" ];
+    if [ ! -f /$item ];
     then
       if [ "$item" != "mnt" ];
       then
@@ -43,7 +43,9 @@ prepare_rootfs_mount() {
       fi
     fi
   done
-  mount -o bind /tmp $ROOT_PATH/tmp
+  mkdir -p $ROOT_PATH/dev/shm && mount -t tmpfs tmpfs $ROOT_PATH/dev/shm
+  mkdir -p $ROOT_PATH/dev/pts && mount -t devpts devpts $ROOT_PATH/dev/pts 
+  mkdir -p $ROOT_PATH/run/user/0 && mount -t tmpfs tmpfs $ROOT_PATH/run/user/0
 }
 
 prepare_unraid_event() {
