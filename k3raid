@@ -1,51 +1,30 @@
 #!/bin/bash
 
-ROOT_NAME="k3root"
-ROOT_PATH="/tmp/k3raid"
+ROOT_BASE="/k3raid"
 BASE_PATH="/boot/k3raid"
+ROOT_PATH="$ROOT_BASE/rootfs"
 DATA_PATH="/mnt/disk1/system/k3s"
 
-K3S_FILE_HOME="/home/k3s"
-K3S_FILE_NAME=(k3s kof k3init k3kill)
+K3S_FILE_HOME="/root"
+K3S_FILE_NAME=(k3s kof k3init)
 K3S_DATA_PATH=(/etc/rancher /var/lib/rancher/k3s /var/lib/kubelet /var/lib/cni /var/log)
 
 UNRAID_RC="/etc/rc.d"
 UNRAID_PATH="/usr/local/emhttp/plugins/k3raid/event"
 
-prepare_rootfs_image() {
-  mkdir -p $ROOT_PATH
-  [ -f $BASE_PATH/$ROOT_NAME ] || (
-    dd if=/dev/zero of=$BASE_PATH/$ROOT_NAME bs=1M count=10
-    mkfs.ext4 $BASE_PATH/$ROOT_NAME
-    mkdir -p $ROOT_PATH
-    mount $BASE_PATH/$ROOT_NAME $ROOT_PATH
-    for item in $(\ls /);
-    do
-      [ -f /$item ] || mkdir -p $ROOT_PATH/$item
-    done
-    umount $ROOT_PATH
-  )
-}
-
 prepare_rootfs_mount() {
+  # mount old rootfs
+  mkdir -p /tmp/rootfs
+  mount -o bind / /tmp/rootfs
+  # mount new rootfs bundle
+  mkdir -p $ROOT_BASE
+  mount -t tmpfs tmpfs $ROOT_BASE
+  # make new rootfs bundle
   mkdir -p $ROOT_PATH
-  mount -o ro $BASE_PATH/$ROOT_NAME $ROOT_PATH
-  mount --make-shared /mnt
-  for item in $(\ls /);
-  do
-    if [ ! -f /$item ];
-    then
-      if [ "$item" != "mnt" ];
-      then
-        mount -o bind /$item $ROOT_PATH/$item
-      else
-        mount --rbind /$item $ROOT_PATH/$item
-      fi
-    fi
-  done
-  mkdir -p $ROOT_PATH/dev/shm && mount -t tmpfs tmpfs $ROOT_PATH/dev/shm
-  mkdir -p $ROOT_PATH/dev/pts && mount -t devpts devpts $ROOT_PATH/dev/pts 
-  mkdir -p $ROOT_PATH/run/user/0 && mount -t tmpfs tmpfs $ROOT_PATH/run/user/0
+  cp -R /tmp/rootfs/* $ROOT_PATH/
+  # cleanup
+  umount /tmp/rootfs
+  rm -rf /tmp/rootfs
 }
 
 prepare_unraid_event() {
@@ -68,8 +47,9 @@ start_k3s() {
   do
     mkdir -p ${DATA_PATH}${kdp}
     mkdir -p ${ROOT_PATH}${kdp}
-    mount -o bind ${DATA_PATH}${kdp} ${ROOT_PATH}${kdp} 2>/dev/null
   done
+  # generate config
+  sed "s|\$KDP|$DATA_PATH|g" $BASE_PATH/config.json.tmpl > $ROOT_BASE/config.json
   # copy binarys
   mkdir -p ${ROOT_PATH}${K3S_FILE_HOME}
   for file in "${K3S_FILE_NAME[@]}";
@@ -78,45 +58,33 @@ start_k3s() {
     chmod 755 ${ROOT_PATH}${K3S_FILE_HOME}/${file}
   done
   # run
-  chroot $ROOT_PATH $K3S_FILE_HOME/k3init
-  # cleanup after k3s exit
-  for kdp in "${K3S_DATA_PATH[@]}";
-  do
-    umount ${ROOT_PATH}${kdp} 2>/dev/null
-  done
+  exec runc run --no-pivot --bundle $ROOT_BASE k3raid
 }
 
 unmounting_disks() {
-  pkill k3s
+  runc delete --force k3raid >/dev/null 2>&1
 }
 
 disks_mounted() {
   perl $BASE_PATH/k3back
 }
 
-k3s_ppid() {
-  pid="$(ps aux | grep "$K3S_FILE_HOME/k3[s]" | awk '{print $2}' | xargs)"
-  [ "$pid" == "" ] && return
-  ps -o ppid= -p $pid | xargs
-}
-
 k3s_alive() {
-  ppid="$(k3s_ppid)"
-  cat /proc/$ppid/cmdline | grep --binary-files=text kof | wc -l
+  runc ps k3raid 2>/dev/null | wc -l
 }
 
 rc_status() {
-  [ "$(k3s_alive)" == "1" ] && echo "* running ..." || echo "* stopped ..."
+  [ "$(k3s_alive)" != "0" ] && echo "* running ..." || echo "* stopped ..."
 }
 
 rc_start() {
   echo "* starting ..."
-  [ "$(k3s_alive)" == "1" ] || disks_mounted
+  [ "$(k3s_alive)" != "0" ] || disks_mounted
 }
 
 rc_stop() {
   echo "* stopping ..."
-  [ "$(k3s_alive)" == "1" ] && unmounting_disks
+  [ "$(k3s_alive)" != "0" ] && unmounting_disks
 }
 
 rc_restart() {
@@ -131,11 +99,10 @@ rc_() {
 
 k3s_inside_jail() {
   shift
-  chroot $ROOT_PATH $K3S_FILE_HOME/k3s "$@"
+  runc exec --tty k3raid $K3S_FILE_HOME/k3s "$@"
 }
 
 init() {
-  prepare_rootfs_image
   prepare_rootfs_mount
   prepare_unraid_event
   prepare_unraid_service

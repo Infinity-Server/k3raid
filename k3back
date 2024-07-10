@@ -31,4 +31,7 @@ sub daemon {
 }
 
 daemon();
-system('/usr/local/emhttp/plugins/k3raid/event/any_event start_k3s');
+
+my $script = '/usr/local/emhttp/plugins/k3raid/event/any_event';
+my @args = ('start_k3s');
+exec { $script } $script, @args or die "execvp failed: $!";
