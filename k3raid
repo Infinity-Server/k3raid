@@ -1,12 +1,13 @@
 #!/bin/bash
 
 ROOT_BASE="/k3raid"
+RUNC_PATH="/run/k3raid"
 BASE_PATH="/boot/k3raid"
 ROOT_PATH="$ROOT_BASE/rootfs"
 DATA_PATH="/mnt/disk1/system/k3s"
 
 K3S_FILE_HOME="/root"
-K3S_FILE_NAME=(k3s kof k3init)
+K3S_FILE_NAME=(k3s kof k3init k3kill)
 K3S_DATA_PATH=(/etc/rancher /var/lib/rancher/k3s /var/lib/kubelet /var/lib/cni /var/log)
 
 UNRAID_RC="/etc/rc.d"
@@ -49,7 +50,10 @@ start_k3s() {
     mkdir -p ${ROOT_PATH}${kdp}
   done
   # generate config
-  sed "s|\$KDP|$DATA_PATH|g" $BASE_PATH/config.json.tmpl > $ROOT_BASE/config.json
+  cat $BASE_PATH/k3conf |\
+    sed "s|\$DATA_PATH|$DATA_PATH|g" |\
+    sed "s|\$K3S_FILE_HOME|$K3S_FILE_HOME|g" |\
+    cat - > $ROOT_BASE/config.json
   # copy binarys
   mkdir -p ${ROOT_PATH}${K3S_FILE_HOME}
   for file in "${K3S_FILE_NAME[@]}";
@@ -58,11 +62,14 @@ start_k3s() {
     chmod 755 ${ROOT_PATH}${K3S_FILE_HOME}/${file}
   done
   # run
-  exec runc run --no-pivot --bundle $ROOT_BASE k3raid
+  exec runc --root $RUNC_PATH run --no-pivot --bundle $ROOT_BASE k3raid
 }
 
 unmounting_disks() {
-  runc delete --force k3raid >/dev/null 2>&1
+  # kill k3s so that we can have an opportunity to cleanup
+  pkill -9 k3s
+  # wait container exit
+  inotifywait --timeout 10 --event delete $RUNC_PATH/k3raid/state.json >/dev/null 2>&1
 }
 
 disks_mounted() {
@@ -70,7 +77,7 @@ disks_mounted() {
 }
 
 k3s_alive() {
-  runc ps k3raid 2>/dev/null | wc -l
+  runc --root $RUNC_PATH ps k3raid 2>/dev/null | wc -l
 }
 
 rc_status() {
@@ -89,7 +96,6 @@ rc_stop() {
 
 rc_restart() {
   rc_stop
-  sleep 5
   rc_start
 }
 
@@ -99,7 +105,7 @@ rc_() {
 
 k3s_inside_jail() {
   shift
-  runc exec --tty k3raid $K3S_FILE_HOME/k3s "$@"
+  runc --root $RUNC_PATH exec --tty k3raid $K3S_FILE_HOME/k3s "$@"
 }
 
 init() {

@@ -7,9 +7,9 @@
       "gid": 0
     },
     "args": [
-      "/root/k3init"
+      "$K3S_FILE_HOME/k3init"
     ],
-    "cwd": "/root",
+    "cwd": "$K3S_FILE_HOME",
     "capabilities": {
       "bounding": [
         "CAP_CHOWN",
@@ -240,7 +240,7 @@
     {
       "destination": "/etc/rancher",
       "type": "bind",
-      "source": "$KDP/etc/rancher",
+      "source": "$DATA_PATH/etc/rancher",
       "options": [
         "rbind",
         "rprivate"
@@ -249,7 +249,7 @@
     {
       "destination": "/var/lib/rancher/k3s",
       "type": "bind",
-      "source": "$KDP/var/lib/rancher/k3s",
+      "source": "$DATA_PATH/var/lib/rancher/k3s",
       "options": [
         "rbind",
         "rprivate"
@@ -258,7 +258,7 @@
     {
       "destination": "/var/lib/kubelet",
       "type": "bind",
-      "source": "$KDP/var/lib/kubelet",
+      "source": "$DATA_PATH/var/lib/kubelet",
       "options": [
         "rbind",
         "rprivate"
@@ -267,7 +267,7 @@
     {
       "destination": "/var/lib/cni",
       "type": "bind",
-      "source": "$KDP/var/lib/cni",
+      "source": "$DATA_PATH/var/lib/cni",
       "options": [
         "rbind",
         "rprivate"
@@ -276,7 +276,7 @@
     {
       "destination": "/var/log",
       "type": "bind",
-      "source": "$KDP/var/log",
+      "source": "$DATA_PATH/var/log",
       "options": [
         "rbind",
         "rprivate"
@@ -345,7 +345,8 @@
         "type": "mount"
       },
       {
-        "type": "pid"
+        "type": "pid",
+        "path": "/proc/1/ns/pid"
       }
     ]
   }

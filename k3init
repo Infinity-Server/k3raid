@@ -8,3 +8,6 @@ K3S=/root/k3s bash /root/kof
 
 # kill rpcbind
 pkill -9 rpcbind
+
+# cleanup
+/root/k3kill
