@@ -343,10 +343,6 @@
     "namespaces": [
       {
         "type": "mount"
-      },
-      {
-        "type": "pid",
-        "path": "/proc/1/ns/pid"
       }
     ]
   }
