@@ -24,8 +24,8 @@ $K3S \
 
 > Usage Notice
 
-1. After start, you can find k3s in `/home/k3s`, *DO NOT REMOVE THESE FILES !!!*
+1. After OS start, you can control k3raid using `/etc/rc.d/rc.k3s`
 
-2. All data are located in `/mnt/disk1/system/k3s`, you can change it by edit `k3raid` file
+2. All data are located in `/mnt/disk1/system/k3raid` by default
 
 3. Traefik use port `80/443` by default, which may conflict with emhttpd, use with caution
