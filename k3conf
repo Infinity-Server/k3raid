@@ -296,8 +296,8 @@
       "type": "bind",
       "source": "/etc/localtime",
       "options": [
-        "rbind",
         "ro",
+        "rbind",
         "rprivate"
       ]
     },
@@ -306,6 +306,37 @@
       "type": "bind",
       "source": "/lib/modules",
       "options": [
+        "ro",
+        "rbind",
+        "rprivate"
+      ]
+    },
+    {
+      "destination": "/usr/bin",
+      "type": "bind",
+      "source": "/usr/bin",
+      "options": [
+        "ro",
+        "rbind",
+        "rprivate"
+      ]
+    },
+    {
+      "destination": "/usr/lib",
+      "type": "bind",
+      "source": "/usr/lib",
+      "options": [
+        "ro",
+        "rbind",
+        "rprivate"
+      ]
+    },
+    {
+      "destination": "/usr/lib64",
+      "type": "bind",
+      "source": "/usr/lib64",
+      "options": [
+        "ro",
         "rbind",
         "rprivate"
       ]
@@ -315,6 +346,7 @@
       "type": "bind",
       "source": "/etc/resolv.conf",
       "options": [
+        "ro",
         "rbind",
         "rprivate"
       ]
@@ -324,6 +356,7 @@
       "type": "bind",
       "source": "/etc/hosts",
       "options": [
+        "ro",
         "rbind",
         "rprivate"
       ]
