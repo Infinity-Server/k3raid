@@ -31,6 +31,7 @@ prepare_rootfs_mount() {
 prepare_unraid_event() {
   mkdir -p $UNRAID_PATH
   echo "#!/bin/bash" > $UNRAID_PATH/any_event
+  echo "[ \"\$1\" != \"disks_mounted\" ] && [ \"\$1\" != \"unmounting_disks\" ] && [ \"\$1\" != \"start_k3s\" ] && exit" >> $UNRAID_PATH/any_event
   echo "exec bash $BASE_PATH/k3raid \$@" >> $UNRAID_PATH/any_event
   chmod 755 $UNRAID_PATH/any_event
 }
