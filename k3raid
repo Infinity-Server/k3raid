@@ -22,7 +22,7 @@ prepare_rootfs_mount() {
   mount -t tmpfs tmpfs $ROOT_BASE
   # make new rootfs bundle
   mkdir -p $ROOT_PATH
-  cp -R /tmp/rootfs/* $ROOT_PATH/
+  rsync -a /tmp/rootfs/ $ROOT_PATH --exclude={"var/local","tmp/rootfs"}
   # cleanup
   umount /tmp/rootfs
   rm -rf /tmp/rootfs
