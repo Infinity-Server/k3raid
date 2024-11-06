@@ -71,6 +71,15 @@ unmounting_disks() {
   pkill -9 k3s
   # wait container exit
   inotifywait --timeout 10 --event delete $RUNC_PATH/k3raid/state.json >/dev/null 2>&1
+  # wait 3s
+  sleep 3
+  # cleanup cgroups
+  find /sys/fs/cgroup/kubepods -type d |\
+    tac |\
+    xargs rmdir
+  find /sys/fs/cgroup/k3raid -type d |\
+    tac |\
+    xargs rmdir
 }
 
 disks_mounted() {
