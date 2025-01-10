@@ -4,7 +4,7 @@ ROOT_BASE="/k3raid"
 RUNC_PATH="/run/k3raid"
 BASE_PATH="/boot/k3raid"
 ROOT_PATH="$ROOT_BASE/rootfs"
-DATA_PATH="/mnt/disk1/system/k3raid"
+DATA_PATH="/mnt/data/system/k3raid"
 
 K3S_FILE_HOME="/root"
 K3S_FILE_NAME=(k3s kof k3init k3kill)
